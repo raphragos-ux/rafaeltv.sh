@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # =========================================
-# SHELL DEPLOYER BY RAFAEL R. - FIXED VERSION
+# SHELL DEPLOYER BY RAFAEL R. - ERROR FIXED
 # =========================================
 
 # =========================
@@ -39,7 +39,7 @@ clear
 echo ""
 echo -e "${CYAN}=========================================${NC}"
 echo -e "${GREEN}   DEPLOYER: TROJAN + VLESS + VMESS${NC}"
-echo -e "${GREEN}         FULLY FIXED${NC}"
+echo -e "${GREEN}        NO MORE ERRORS${NC}"
 echo -e "${CYAN}=========================================${NC}"
 echo ""
 
@@ -48,7 +48,7 @@ echo ""
 # =========================
 if [ -z "$PROJECT_ID" ]; then
     echo -e "${RED}❌ ERROR: No Google Cloud project set.${NC}"
-    echo "Run: gcloud config set project YOUR_PROJECT_ID"
+    echo "Run first: gcloud config set project YOUR_PROJECT_ID"
     exit 1
 fi
 
@@ -81,9 +81,20 @@ echo ""
 while true; do
     read -p "Select Billing Type [1-2]: " BILLING_CHOICE
     case $BILLING_CHOICE in
-        1) BILLING_MODE="request"; BILL_FLAGS="--cpu-throttling"; break ;;
-        2) BILLING_MODE="instance"; BILL_FLAGS="--no-cpu-throttling --cpu-boost"; break ;;
-        *) echo -e "${RED}⚠️ Enter only 1 or 2${NC}"; echo "" ;;
+        1)
+            BILLING_MODE="request"
+            BILL_FLAGS="--cpu-throttling"
+            break
+            ;;
+        2)
+            BILLING_MODE="instance"
+            BILL_FLAGS="--no-cpu-throttling --cpu-boost"
+            break
+            ;;
+        *)
+            echo -e "${RED}⚠️ Enter only 1 or 2${NC}"
+            echo ""
+            ;;
     esac
 done
 
@@ -197,7 +208,7 @@ cat > config.json <<EOF
 }
 EOF
 
-# ✅ NGINX.CONF - FIXED HEADERS
+# ✅ NGINX.CONF
 cat > nginx.conf <<EOF
 worker_processes auto;
 worker_rlimit_nofile 65535;
@@ -283,12 +294,13 @@ exec /usr/local/openresty/bin/openresty -g 'daemon off;'
 EOF
 chmod +x entrypoint.sh
 
-# ✅ DOCKERFILE - FIXED XRAY SOURCE
+# ✅ DOCKERFILE - FIXED XRAY DOWNLOAD
 cat > Dockerfile <<EOF
 FROM alpine:3.21 AS xray-bin
 RUN apk add --no-cache curl unzip ca-certificates
 WORKDIR /tmp
-RUN curl -sL -o xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip \
+# Gumamit ng direkta at matatag na link sa halip na "latest"
+RUN curl -sL -o xray.zip https://github.com/XTLS/Xray-core/releases/download/v25.2.1/Xray-linux-64.zip \
     && unzip xray.zip xray \
     && chmod +x xray \
     && mv xray /usr/local/bin/
@@ -315,12 +327,11 @@ echo ""
 
 gcloud builds submit \
   --tag gcr.io/$PROJECT_ID/$CLOUD_RUN_SERVICE_NAME \
-  --machine-type=e2-medium \
   --quiet
 
 echo ""
 echo -e "${CYAN}=========================================${NC}"
-echo -e "${GREEN}         DEPLOYING CLOUD RUN${NC}"
+echo -e "${GREEN}         DEPLOYING TO CLOUD RUN${NC}"
 echo -e "${CYAN}=========================================${NC}"
 echo ""
 
