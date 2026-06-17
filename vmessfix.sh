@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # =========================================
-# SHELL DEPLOYER BY RAFAEL R. - ERROR FIXED
+# SHELL DEPLOYER — FIXED DOWNLOAD / BUILD
 # =========================================
 
 # =========================
@@ -39,7 +39,7 @@ clear
 echo ""
 echo -e "${CYAN}=========================================${NC}"
 echo -e "${GREEN}   DEPLOYER: TROJAN + VLESS + VMESS${NC}"
-echo -e "${GREEN}        NO MORE ERRORS${NC}"
+echo -e "${GREEN}        DOWNLOAD FIXED${NC}"
 echo -e "${CYAN}=========================================${NC}"
 echo ""
 
@@ -82,12 +82,10 @@ while true; do
     read -p "Select Billing Type [1-2]: " BILLING_CHOICE
     case $BILLING_CHOICE in
         1)
-            BILLING_MODE="request"
             BILL_FLAGS="--cpu-throttling"
             break
             ;;
         2)
-            BILLING_MODE="instance"
             BILL_FLAGS="--no-cpu-throttling --cpu-boost"
             break
             ;;
@@ -140,7 +138,7 @@ while true; do
 done
 
 echo ""
-echo -e "${GREEN}✅ Selected:${NC} $MEMORY | $CPU | $BILLING_MODE"
+echo -e "${GREEN}✅ Selected:${NC} $MEMORY | $CPU"
 echo ""
 
 # =========================
@@ -294,14 +292,16 @@ exec /usr/local/openresty/bin/openresty -g 'daemon off;'
 EOF
 chmod +x entrypoint.sh
 
-# ✅ DOCKERFILE - FIXED XRAY DOWNLOAD
+# ✅ DOCKERFILE — FIXED DOWNLOAD / NO CORRUPT ZIP
 cat > Dockerfile <<EOF
 FROM alpine:3.21 AS xray-bin
-RUN apk add --no-cache curl unzip ca-certificates
+RUN apk add --no-cache curl ca-certificates
 WORKDIR /tmp
-# Gumamit ng direkta at matatag na link sa halip na "latest"
-RUN curl -sL -o xray.zip https://github.com/XTLS/Xray-core/releases/download/v25.2.1/Xray-linux-64.zip \
-    && unzip xray.zip xray \
+# Use proper redirect following + check file size
+RUN curl -f -L --retry 3 --retry-delay 2 -o xray.zip https://github.com/XTLS/Xray-core/releases/download/v25.2.1/Xray-linux-64.zip \
+    && test -f xray.zip && [ \$(stat -c%s xray.zip) -gt 1000000 ] \
+    && apk add --no-cache unzip \
+    && unzip -q xray.zip xray \
     && chmod +x xray \
     && mv xray /usr/local/bin/
 
